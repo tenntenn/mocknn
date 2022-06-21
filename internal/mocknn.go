@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	ExitSuccess = 0
-	ExitError   = 1
+	exitSuccess = 0
+	exitError   = 1
 )
 
 type Mocknn struct {
@@ -42,13 +42,12 @@ func Main(version string, args []string) int {
 func (m *Mocknn) Main(args []string) int {
 	if err := m.Run(args); err != nil {
 		fmt.Fprintln(m.ErrOutput, "mocknn:", err)
-		return ExitError
+		return exitError
 	}
-	return ExitSuccess
+	return exitSuccess
 }
 
 func (m *Mocknn) Run(args []string) error {
-
 	if len(args) == 0 {
 		args = []string{"."}
 	}
