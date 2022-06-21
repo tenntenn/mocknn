@@ -2,6 +2,11 @@
 
 [![pkg.go.dev][gopkg-badge]][gopkg]
 
+mocknn is a mocking tool using `-overlay` option of `go test`.
+
+This is experimental project. APIs may change, do not use your product development.
+If you try to use this tool, please give me your feedback by filing an issue.
+
 ## How to install
 
 ```
