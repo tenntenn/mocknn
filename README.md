@@ -102,7 +102,7 @@ ok  	github.com/tenntenn/mocknn/_example/simple	0.273s
 
 ## Examples
 
-See [_examples](./_examples) directory.
+See [_example](./_example) directory.
 
 <!-- links -->
 [gopkg]: https://pkg.go.dev/github.com/tenntenn/mocknn
