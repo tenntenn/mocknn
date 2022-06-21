@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/tenntenn/mocknn/internal/goflags"
 	"github.com/tenntenn/mocknn/internal/overlay"
@@ -123,7 +122,13 @@ func (m *Mocknn) testWithMock(args []string) (rerr error) {
 
 	var initOverlay *packages.OverlayJSON
 	if flagOverlay != "" {
-		if err := json.NewDecoder(strings.NewReader(flagOverlay)).Decode(&initOverlay); err != nil {
+		f, err := os.Open(flagOverlay)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		if err := json.NewDecoder(f).Decode(&initOverlay); err != nil {
 			return err
 		}
 	}

@@ -105,6 +105,16 @@ PASS
 ok  	github.com/tenntenn/mocknn/_example/simple	0.273s
 ```
 
+mocknn can work with [testtime](https://github.com/tenntenn/testtime).
+
+```
+$ cd _example/timesample
+$ mocknn test -overlay=`testtime`
+2006-01-02 03:00:00 +0000 UTC
+PASS
+ok  	github.com/tenntenn/mocknn/_example/timesample	0.837s
+```
+
 ## Examples
 
 See [_example](./_example) directory.
