@@ -98,7 +98,6 @@ func (m *Mocknn) load(patterns []string) (_ []*packages.Package, rerr error) {
 }
 
 func (m *Mocknn) testWithMock(args []string) (rerr error) {
-
 	tmpdir, err := os.MkdirTemp("", "mocknn-*")
 	if err != nil {
 		return err
@@ -107,9 +106,7 @@ func (m *Mocknn) testWithMock(args []string) (rerr error) {
 		rerr = multierr.Append(rerr, os.RemoveAll(tmpdir))
 	}()
 
-	var (
-		flagOverlay string
-	)
+	var flagOverlay string
 
 	flags := flag.NewFlagSet("mocknn test", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
@@ -180,9 +177,9 @@ func (m *Mocknn) testWithMock(args []string) (rerr error) {
 }
 
 func (m *Mocknn) printOverlayJSON(args []string) (rerr error) {
-
 	pkgs, err := m.load(args)
 	if err != nil {
+		return err
 	}
 
 	g := &overlay.Generator{
