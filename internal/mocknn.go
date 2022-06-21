@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/tenntenn/mocknn/internal/goflags"
 	"github.com/tenntenn/mocknn/internal/overlay"
 	"go.uber.org/multierr"
 	"golang.org/x/tools/go/packages"
@@ -50,7 +51,7 @@ func (m *Mocknn) Main(args []string) int {
 func (m *Mocknn) Run(args []string) error {
 
 	if len(args) == 0 {
-		args = []string{"./..."}
+		args = []string{"."}
 	}
 
 	switch args[0] {
@@ -108,17 +109,23 @@ func (m *Mocknn) testWithMock(args []string) (rerr error) {
 		rerr = multierr.Append(rerr, os.RemoveAll(tmpdir))
 	}()
 
-	if len(args) == 0 {
-		args = []string{"./..."}
-	}
-
 	var (
-		flagTests string
+		flagOverlay string
 	)
+
 	flags := flag.NewFlagSet("mocknn test", flag.ContinueOnError)
-	flags.StringVar(&flagTests, "gotest", "", "options for go test")
+	flags.SetOutput(io.Discard)
+	flags.StringVar(&flagOverlay, "overlay", "", "overlay json")
+	goflags.All(flags)
 	if err := flags.Parse(args); err != nil {
 		return err
+	}
+
+	var initOverlay *packages.OverlayJSON
+	if flagOverlay != "" {
+		if err := json.NewDecoder(strings.NewReader(flagOverlay)).Decode(&initOverlay); err != nil {
+			return err
+		}
 	}
 
 	pkgs, err := m.load(flags.Args())
@@ -127,8 +134,9 @@ func (m *Mocknn) testWithMock(args []string) (rerr error) {
 	}
 
 	g := &overlay.Generator{
-		Dir:  tmpdir,
-		Pkgs: pkgs,
+		Dir:     tmpdir,
+		Pkgs:    pkgs,
+		Overlay: initOverlay,
 	}
 
 	overlayJSON, err := g.Generate()
@@ -148,7 +156,12 @@ func (m *Mocknn) testWithMock(args []string) (rerr error) {
 		rerr = multierr.Append(rerr, f.Close())
 	}()
 
-	goargs := append([]string{"test", "-overlay", f.Name()}, append(strings.Split(flagTests, " "), flags.Args()...)...)
+	opts := make([]string, 0, flags.NFlag())
+	flags.Visit(func(f *flag.Flag) {
+		opts = append(opts, fmt.Sprintf("-%s=%v", f.Name, f.Value))
+	})
+
+	goargs := append([]string{"test", "-overlay", f.Name()}, append(opts, flags.Args()...)...)
 	cmd := exec.Command("go", goargs...)
 	cmd.Stdout = m.Output
 	cmd.Stderr = m.ErrOutput

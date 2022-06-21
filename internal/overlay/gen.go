@@ -19,17 +19,16 @@ import (
 const directive = "//mocknn:"
 
 type Generator struct {
-	Dir  string
-	Pkgs []*packages.Package
+	Dir     string
+	Pkgs    []*packages.Package
+	Overlay *packages.OverlayJSON
 }
 
 func (g *Generator) Generate() (*packages.OverlayJSON, error) {
 	r := &replacer{
 		pkgs: g.Pkgs,
 		dir:  g.Dir,
-		json: &packages.OverlayJSON{
-			Replace: make(map[string]string),
-		},
+		json: g.Overlay,
 		replaces: make(map[ast.Node]ast.Node),
 		deletes:  make(map[ast.Node]bool),
 	}
@@ -40,6 +39,12 @@ func (g *Generator) Generate() (*packages.OverlayJSON, error) {
 			return nil, err
 		}
 		r.dir = tmpdir
+	}
+
+	if r.json == nil {
+		r.json = &packages.OverlayJSON{
+			Replace: make(map[string]string),
+		}
 	}
 
 	for _, pkg := range g.Pkgs {
