@@ -1,0 +1,9 @@
+-- a.go --
+package normal
+
+type T = MockT
+
+func F(t *T) {
+	MockF(t)
+
+}
