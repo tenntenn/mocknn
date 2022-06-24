@@ -25,7 +25,8 @@ func TestGenerator_Generate(t *testing.T) {
 	cases := map[string]struct {
 		wantErr bool
 	}{
-		"normal": {false},
+		"normal":   {false},
+		"externalpkg": {false},
 	}
 
 	goldendir := filepath.Join(testdata(t), "golden")
@@ -88,7 +89,7 @@ func load(t *testing.T, pkg string) []*packages.Package {
 		Tests: true,
 		Mode: packages.NeedName | packages.NeedTypes |
 			packages.NeedSyntax | packages.NeedTypesInfo |
-			packages.NeedModule,
+			packages.NeedModule | packages.NeedDeps | packages.NeedImports,
 	}
 
 	pkgs, err := packages.Load(config, "./...")

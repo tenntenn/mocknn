@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gostaticanalysis/analysisutil"
 	"go.uber.org/multierr"
 	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
@@ -26,9 +27,9 @@ type Generator struct {
 
 func (g *Generator) Generate() (*packages.OverlayJSON, error) {
 	r := &replacer{
-		pkgs: g.Pkgs,
-		dir:  g.Dir,
-		json: g.Overlay,
+		pkgs:     g.Pkgs,
+		dir:      g.Dir,
+		json:     g.Overlay,
 		replaces: make(map[ast.Node]ast.Node),
 		deletes:  make(map[ast.Node]bool),
 	}
@@ -75,6 +76,14 @@ func (r *replacer) replacePkg(pkg *packages.Package) error {
 	for _, file := range pkg.Syntax {
 		if err := r.createFile(pkg.Fset, file); err != nil {
 			return err
+		}
+	}
+
+	for _, pkg := range pkg.Imports {
+		for _, file := range pkg.Syntax {
+			if err := r.createFile(pkg.Fset, file); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -174,12 +183,19 @@ func (r *replacer) replaceType(pkg *packages.Package, cmap ast.CommentMap, file 
 			continue
 		}
 
-		orgspec := typeSepc(pkg, pkg.Types.Scope().Lookup(org))
+		var orgObj types.Object
+		if i := strings.Index(org, "."); i >= 0 {
+			orgObj = analysisutil.LookupFromImports(pkg.Types.Imports(), org[:i], org[i+1:])
+		} else {
+			orgObj = pkg.Types.Scope().Lookup(org)
+		}
+
+		orgspec := typeSpec(pkg, orgObj)
 		if orgspec == nil {
 			continue
 		}
 
-		typ, _ := pkg.TypesInfo.TypeOf(orgspec.Name).(*types.Named)
+		typ, _ := orgObj.Type().(*types.Named)
 		if typ == nil {
 			continue
 		}
@@ -291,14 +307,19 @@ func (r *replacer) replaceFunc(pkg *packages.Package, cmap ast.CommentMap, file 
 	return nil
 }
 
-func typeSepc(pkg *packages.Package, o types.Object) *ast.TypeSpec {
+func typeSpec(pkg *packages.Package, o types.Object) *ast.TypeSpec {
 	switch o.(type) {
 	case *types.TypeName: // ok
 	default:
 		return nil
 	}
 
-	id := ident(pkg.TypesInfo, o)
+	pkg = findPkg(pkg, o)
+	if pkg == nil {
+		return nil
+	}
+
+	id := ident(pkg, o)
 	if id == nil {
 		return nil
 	}
@@ -329,7 +350,7 @@ func valueSepc(pkg *packages.Package, o types.Object) *ast.ValueSpec {
 		return nil
 	}
 
-	id := ident(pkg.TypesInfo, o)
+	id := ident(pkg, o)
 	if id == nil {
 		return nil
 	}
@@ -360,7 +381,7 @@ func funcDecl(pkg *packages.Package, o types.Object) *ast.FuncDecl {
 		return nil
 	}
 
-	id := ident(pkg.TypesInfo, o)
+	id := ident(pkg, o)
 	if id == nil {
 		return nil
 	}
@@ -377,12 +398,28 @@ func funcDecl(pkg *packages.Package, o types.Object) *ast.FuncDecl {
 	return nil
 }
 
-func ident(info *types.Info, o types.Object) *ast.Ident {
-	for id, obj := range info.Defs {
+func ident(pkg *packages.Package, o types.Object) *ast.Ident {
+	for id, obj := range pkg.TypesInfo.Defs {
 		if o == obj {
 			return id
 		}
 	}
+
+	return nil
+}
+
+func findPkg(root *packages.Package, o types.Object) *packages.Package {
+	if root.Types == o.Pkg() {
+		return root
+	}
+
+	for _, pkg := range root.Imports {
+		fmt.Println(pkg.Types)
+		if pkg.Types == o.Pkg() {
+			return pkg
+		}
+	}
+
 	return nil
 }
 
