@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	ExitSuccess = 0
-	ExitError   = 1
+	exitSuccess = 0
+	exitError   = 1
 )
 
 type Mocknn struct {
@@ -42,13 +42,12 @@ func Main(version string, args []string) int {
 func (m *Mocknn) Main(args []string) int {
 	if err := m.Run(args); err != nil {
 		fmt.Fprintln(m.ErrOutput, "mocknn:", err)
-		return ExitError
+		return exitError
 	}
-	return ExitSuccess
+	return exitSuccess
 }
 
 func (m *Mocknn) Run(args []string) error {
-
 	if len(args) == 0 {
 		args = []string{"."}
 	}
@@ -99,7 +98,6 @@ func (m *Mocknn) load(patterns []string) (_ []*packages.Package, rerr error) {
 }
 
 func (m *Mocknn) testWithMock(args []string) (rerr error) {
-
 	tmpdir, err := os.MkdirTemp("", "mocknn-*")
 	if err != nil {
 		return err
@@ -108,9 +106,7 @@ func (m *Mocknn) testWithMock(args []string) (rerr error) {
 		rerr = multierr.Append(rerr, os.RemoveAll(tmpdir))
 	}()
 
-	var (
-		flagOverlay string
-	)
+	var flagOverlay string
 
 	flags := flag.NewFlagSet("mocknn test", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
@@ -181,9 +177,9 @@ func (m *Mocknn) testWithMock(args []string) (rerr error) {
 }
 
 func (m *Mocknn) printOverlayJSON(args []string) (rerr error) {
-
 	pkgs, err := m.load(args)
 	if err != nil {
+		return err
 	}
 
 	g := &overlay.Generator{
